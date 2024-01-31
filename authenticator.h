@@ -7,10 +7,6 @@
 namespace puf {
 
 
-#define DEFAULT_RESOURCE    "Supplicant.csv"
-#define DEFAULT_COUNTER     100
-
-
 typedef struct QueryResult {
     ECP_Point ecp;
     MAC mac;

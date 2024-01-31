@@ -17,3 +17,7 @@
 
 /* Timeout for network operations in ms */
 #define NETWORK_TIMEOUT_MS          3000
+
+/* To be defined during build by cmake */
+#define DEFAULT_RESOURCE    "Supplicant.csv"
+#define DEFAULT_COUNTER     100
