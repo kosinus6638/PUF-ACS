@@ -16,9 +16,13 @@ Authenticator::Authenticator(Network &net, AuthenticationServer &as) :
 {
 }
 
+Authenticator::~Authenticator() {
+    as.sync();
+}
 
 void Authenticator::init() {
     net.init();
+    as.fetch();
     state = IDLE;
 }
 
@@ -43,6 +47,8 @@ int Authenticator::sign_up() {
     remote_mac.hash(1);                     // Hash
     printf("Public Key A: "); A.print64();
 
+    as.store(base_mac, A, remote_mac, DEFAULT_COUNTER);
+
     return 0;
 }
 
@@ -58,6 +64,15 @@ int Authenticator::PUF_CON_phase() {
         return 1;
     }
 
+    // Query for hashed mac
+    auto q = as.query(puf_con.src_mac);
+    if(!q.valid) {
+        puts("Query yielded no result");
+        return 1;
+    }
+
+    base_mac = q.mac;
+    A = q.ecp;
     printf("T64:\t"); puf_con.T.print64();
     return 0;
 }
@@ -110,13 +125,9 @@ int Authenticator::PUF_ACK_phase() {
 
 
 void Authenticator::accept() {    
-    size_t bufSize = 128;
-    uint8_t buffer[128];
-
-    sign_up();
-    PUF_CON_phase();
-    PUF_SYN_phase();
-    PUF_ACK_phase();
+    if( PUF_CON_phase() ) throw Exception("PUF_CON");
+    if( PUF_SYN_phase() ) throw Exception("PUF_SYN");
+    if( PUF_ACK_phase() ) throw Exception("PUF_ACK");
 }
 
 
