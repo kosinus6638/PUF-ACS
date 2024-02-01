@@ -24,6 +24,7 @@ void Supplicant::init() {
     state = INITIALISED;
 
     // ToDo: Use Non-Volatile Storage to know how many times the mach must be hashed
+    mac.hash(1);
 }
 
 
@@ -43,20 +44,19 @@ void Supplicant::sign_up() {
     REGISTER reg;
     MPI a;
 
-    MAC response = sram_puf.get_puf_response(mac);
+    MAC base_mac = sram_puf.puf_to_mac();
+    MAC response = sram_puf.get_puf_response(base_mac);
 
     a.from_binary(response.bytes, 6);
     reg.T = G*a;
 
-    reg.src_mac = mac;
+    reg.src_mac = base_mac;
     reg.dst_mac = switch_mac;
     reg.calc();
 
     // Data exchange with AU
     net.send(reg.binary(), reg.header_len());
     ctr = wait_for_AU_ok();
-
-    mac.hash(1);
 }
 
 
