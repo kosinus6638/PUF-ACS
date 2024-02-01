@@ -53,13 +53,6 @@ public:
 class Authenticator {
 public:
 
-    enum AuthenticatorState {
-        UINITIALISED = 0,
-        IDLE,       // Awaiting PUF_CON or PUF_Performance
-        AWAITING_PUF_SYN_ACK
-    };
-    AuthenticatorState state;
-
     Network &net;
     AuthenticationServer &as;
 
@@ -80,22 +73,22 @@ public:
 
     int PUF_CON_phase();
     int PUF_SYN_phase();
-    int PUF_ACK_phase();
+    bool PUF_ACK_phase();
 
 public:
     Authenticator(Network&, AuthenticationServer&);
-    ~Authenticator();
-
-    void init();
-
-    int sign_up();
-    void accept();
-
     Authenticator() = delete;
     Authenticator(Authenticator&) = delete;
     Authenticator(Authenticator&&) = delete;
+    ~Authenticator();
+
+    void init();
+    int sign_up();
+    int accept(uint8_t *buffer, size_t n);
+    bool connected() {return connected_;}
 
 private:
+    bool connected_;
 };
 
 

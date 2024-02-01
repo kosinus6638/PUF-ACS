@@ -12,9 +12,9 @@ namespace puf {
 Authenticator::Authenticator(Network &net, AuthenticationServer &as) : 
     net(net), 
     as(as), 
-    G(PUFStatics::instance().ecp_group().G)
-{
-}
+    G(PUFStatics::instance().ecp_group().G),
+    connected_(false)
+{ }
 
 Authenticator::~Authenticator() {
     as.sync();
@@ -23,7 +23,7 @@ Authenticator::~Authenticator() {
 void Authenticator::init() {
     net.init();
     as.fetch();
-    state = IDLE;
+    switch_mac = SWITCH_MAC;
 }
 
 
@@ -54,26 +54,14 @@ int Authenticator::sign_up() {
 
 
 int Authenticator::PUF_CON_phase() {
-    uint8_t buffer[128];
-    size_t n = net.receive(buffer, sizeof(buffer));
-
-    try {
-        puf_con.from_binary(buffer, n);
-    } catch(const PacketException &e) {
-        puts(e.what());
-        return 1;
-    }
-
     // Query for hashed mac
     auto q = as.query(puf_con.src_mac);
-    if(!q.valid) {
-        puts("Query yielded no result");
+    if(!q) {
         return 1;
     }
-
     base_mac = q.mac;
     A = q.ecp;
-    printf("T64:\t"); puf_con.T.print64();
+    remote_mac = puf_con.src_mac;
     return 0;
 }
 
@@ -103,31 +91,49 @@ int Authenticator::PUF_SYN_phase() {
 
     puf_syn.calc();                     // Build package
     net.send(puf_syn.binary(), puf_syn.header_len());
+
     return 0;
 }
 
 
-int Authenticator::PUF_ACK_phase() {
-    uint8_t buffer[128];
-    size_t n = net.receive(buffer, sizeof(buffer));
+bool Authenticator::PUF_ACK_phase() {
+    S = A*puf_syn.d + puf_con.T;                    // Calculate S
+    return puf_syn_ack.S == S;
+}
 
-    try {
-        puf_syn_ack.from_binary( (uint8_t*)buffer, n);  // Build packet from binary
-        S = A*puf_syn.d + puf_con.T;                    // Calculate S
-    } catch(const PacketException &e) {
-        puts(e.what());
+
+int Authenticator::accept(uint8_t *buffer, size_t n) {    
+    uint8_t buffer_[128];
+    uint8_t n_;
+
+    // Error check
+    if( deduce_type(buffer, n) != PUF_CON_E ) {
+        puts("Packet is not of type PUF_CON");
         return 1;
     }
 
-    printf("S == S_:\t%s\n", (puf_syn_ack.S == S) ? "true" : "false" );
-    return 0;
-}
+    // Query supplicant
+    puf_con.from_binary( buffer, n );
+    if( PUF_CON_phase() != 0) {
+        puts("Query did not yield result");
+        return 1;
+    }
+    connected_ = false;
 
+    // Calculate and send PUF_SYN
+    PUF_SYN_phase();
 
-void Authenticator::accept() {    
-    if( PUF_CON_phase() ) throw Exception("PUF_CON");
-    if( PUF_SYN_phase() ) throw Exception("PUF_SYN");
-    if( PUF_ACK_phase() ) throw Exception("PUF_ACK");
+    // Receive PUF_SYN_ACK
+    n_ = net.receive(buffer_, sizeof(buffer_));
+    if( deduce_type(buffer_, n_) != PUF_SYN_ACK_E ) {
+        puts("Packet is not of type PUF_SYN_ACK");
+        return 1;
+    }
+
+    // Check if access is granted
+    puf_syn_ack.from_binary(buffer_, n_);
+    connected_ = PUF_ACK_phase();
+    return connected_ ? 0 : 1;
 }
 
 
