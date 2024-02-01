@@ -8,7 +8,18 @@ namespace puf {
 
 
 packet_type_e deduce_type(const uint8_t *buf, size_t bufLen) {
-    return PUF_CON_E;
+    switch( *reinterpret_cast<const packet_type_e*>( buf + sizeof(MAC)*2+2 ) ) {
+        case PUF_CON_E:
+            return PUF_CON_E;
+        case PUF_SYN_E:
+            return PUF_SYN_E;
+        case PUF_SYN_ACK_E:
+            return PUF_SYN_ACK_E;
+        case PUF_PERFORMANCE_E:
+            return PUF_PERFORMANCE_E;
+        default:
+            return PUF_UNKNOWN_E;
+    }
 }
 
 
