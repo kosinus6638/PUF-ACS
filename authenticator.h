@@ -46,7 +46,7 @@ public:
      * @param hashed_mac The MAC to query, must be a hash of #nth iteration from base mac
      * @return Pair of A and base mac. Empty optional if access is denied
     */
-    virtual QueryResult query(const MAC& hashed_mac) = 0;
+    virtual QueryResult query(const MAC& hashed_mac, bool decrease_counter = true) = 0;
 };
 
 
