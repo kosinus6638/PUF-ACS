@@ -145,6 +145,10 @@ bool Authenticator::validate(const PUF_Performance &pp, bool initial_frame) {
     static uint8_t concat_buf[36];
     static VLAN_Payload p;
 
+    // Check if connected and correct MAC
+    if( !connected() ) return false;
+    if( memcmp(pp.src_mac.bytes, remote_mac.bytes, sizeof(MAC) ) != 0 ) return false;
+
     size_t k_offset = 0;
 
     if(initial_frame) {
