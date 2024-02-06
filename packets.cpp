@@ -207,14 +207,14 @@ uint8_t* PUF_Performance::binary() {
 }
 
 
-void PUF_Performance::set_payload(Payload load) {
+void PUF_Performance::set_payload(const VLAN_Payload load) {
     *(reinterpret_cast<uint16_t*>(header.U.vlan_buf_1)) = load.load1;
     *(reinterpret_cast<uint16_t*>(header.U.vlan_buf_2)) = load.load2;
 }
 
 
-Payload PUF_Performance::get_payload() const {
-    Payload retval;
+VLAN_Payload PUF_Performance::get_payload() const {
+    VLAN_Payload retval;
     retval.load1 = *(reinterpret_cast<const uint16_t*>(header.U.vlan_buf_1));
     retval.load2 = *(reinterpret_cast<const uint16_t*>(header.U.vlan_buf_2));
     return retval;

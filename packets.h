@@ -26,13 +26,13 @@ enum __attribute__((__packed__)) packet_type_e {
 packet_type_e deduce_type(const uint8_t *buf, size_t bufLen);
 
 
-typedef union Payload {
+typedef union VLAN_Payload {
     struct __attribute__((__packed__)) {
         uint16_t load1;
         uint16_t load2;
     };
     uint32_t payload;
-} Payload;
+} VLAN_Payload;
 
 
 typedef struct MAC {
@@ -153,8 +153,8 @@ public:
     uint8_t* binary();
     constexpr size_t header_len() {return sizeof(Header_t);}
 
-    void set_payload(Payload load);
-    Payload get_payload() const;
+    void set_payload(const VLAN_Payload load);
+    VLAN_Payload get_payload() const;
 };
 
 
