@@ -2,6 +2,8 @@
 #include "statics.h"
 #include "errors.h"
 
+#include <mbedtls/sha256.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -134,6 +136,37 @@ int Authenticator::accept(uint8_t *buffer, size_t n) {
     puf_syn_ack.from_binary(buffer_, n_);
     connected_ = PUF_ACK_phase();
     return connected_ ? 0 : 1;
+}
+
+
+bool Authenticator::validate(const PUF_Performance &pp, bool initial_frame) {
+
+    static uint8_t serv_hk_mac[32];
+    static uint8_t concat_buf[36];
+    static VLAN_Payload p;
+
+    size_t k_offset = 0;
+
+    if(initial_frame) {
+        k_offset = sizeof(MAC);
+        memcpy( concat_buf, pp.src_mac.bytes, k_offset );
+    } else {
+        k_offset = sizeof(serv_hk_mac);
+        memcpy( concat_buf, serv_hk_mac, k_offset );
+    }
+
+    // Concatenate 4 digits of k to concatenation buffer
+    memcpy( concat_buf+k_offset, k.p, 4 );
+
+    if( mbedtls_sha256_ret(concat_buf, sizeof(concat_buf), serv_hk_mac, 0) != 0) {
+        puts("Error calculating SHA256\n");
+        return false;
+    }
+
+    p.load1 = *(reinterpret_cast<uint16_t*>(serv_hk_mac));
+    p.load2 = *(reinterpret_cast<uint16_t*>(serv_hk_mac+30));
+
+    return p.payload == pp.get_payload().payload;
 }
 
 

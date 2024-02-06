@@ -86,6 +86,7 @@ public:
     int sign_up();
     int accept(uint8_t *buffer, size_t n);
     bool connected() {return connected_;}
+    bool validate(const PUF_Performance &pp, bool initial_frame=false);
 
 private:
     bool connected_;
