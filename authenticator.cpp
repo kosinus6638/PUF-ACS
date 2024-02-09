@@ -160,9 +160,13 @@ bool Authenticator::validate(const PUF_Performance &pp, bool initial_frame) {
     }
 
     // Concatenate 4 digits of k to concatenation buffer
+#if MBEDTLS_VERSION_MAJOR >= 3
+    memcpy( concat_buf+k_offset, k.private_p, 4 );
+    if( mbedtls_sha256(concat_buf, sizeof(concat_buf), serv_hk_mac, 0) != 0) {
+#else
     memcpy( concat_buf+k_offset, k.p, 4 );
-
     if( mbedtls_sha256_ret(concat_buf, sizeof(concat_buf), serv_hk_mac, 0) != 0) {
+#endif
         puts("Error calculating SHA256\n");
         return false;
     }
