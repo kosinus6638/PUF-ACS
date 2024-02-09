@@ -2,6 +2,7 @@
 #include "statics.h"
 #include "errors.h"
 #include <time.h>
+#include <mbedtls/sha256.h>
 
 namespace puf {
 
@@ -173,6 +174,54 @@ void Supplicant::connect(int attempts) {
                 ;
         }
     }
+}
+
+
+void Supplicant::transmit(uint8_t *buf, size_t bufSize, bool initial_frame) {
+    static uint8_t hk_mac[32];
+    static uint8_t concat_buf[36];
+    static VLAN_Payload p;
+    static PUF_Performance pp;
+
+    size_t k_offset = 0;
+
+    if(initial_frame) {
+        memset(hk_mac, 0, sizeof(hk_mac));
+        memset(pp.binary(), 0, pp.header_len());
+
+        // Build static frame on first send
+        pp.src_mac = mac;
+        pp.dst_mac = switch_mac;
+        pp.calc();
+
+        // Copy MAC into concatenation buffer
+        k_offset = sizeof(mac.bytes);
+        memcpy(concat_buf, mac.bytes, k_offset);
+    } else {
+        // Copy last hk_mac into concatenation buffer
+        k_offset = sizeof(hk_mac);
+        memcpy(concat_buf, hk_mac, k_offset);
+    }
+
+    // Concatenate 4 digits of k to concatenation buffer
+    memcpy(concat_buf+k_offset, (void*)k.private_p, 4);
+
+    if( mbedtls_sha256(concat_buf, sizeof(concat_buf), hk_mac, 0) != ESP_OK) {
+        return;
+    }
+
+    // Set user data
+    if(bufSize > 0 && buf != NULL) {
+        memcpy(static_cast<void*>(pp.binary()+22), buf, bufSize );  // ToDo: Dynamic header length
+    }
+
+    // Set VLAN tags
+    p.load1 = *(reinterpret_cast<uint16_t*>(hk_mac));
+    p.load2 = *(reinterpret_cast<uint16_t*>(hk_mac+30));
+    pp.set_payload(p);
+
+    net.send(pp.binary(), pp.header_len());
+
 }
 
 

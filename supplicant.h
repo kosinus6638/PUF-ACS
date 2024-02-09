@@ -71,6 +71,8 @@ public:
      * Should be done before using this class, this is a bodge.
     */
     void sign_up();     // Thanks C++ for making register a keyword
+
+    void transmit(uint8_t *buf, size_t bufSize, bool initial_frame=false);
 };
 
 
