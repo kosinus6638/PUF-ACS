@@ -140,7 +140,6 @@ bool Supplicant::connected() {
 void Supplicant::connect(int attempts) {
 
     while(state != CONNECTED && attempts > 0) {
-        printf("Trying to connect. Attempts left: %d\n", attempts);
         switch(state) {
 
             case UNINITIALISED:
