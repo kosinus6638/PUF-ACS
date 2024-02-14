@@ -221,6 +221,11 @@ VLAN_Payload PUF_Performance::get_payload() const {
 }
 
 
+uint8_t* PUF_Performance::get_data() {
+    return (header.data + sizeof( header.U ));
+}
+
+
 void PUF_Performance::from_binary(uint8_t *buffer, size_t buflen) {
     // Buffer checks
     if(!buffer) {

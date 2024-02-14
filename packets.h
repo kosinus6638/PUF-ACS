@@ -131,7 +131,7 @@ public:
 
 class PUF_Performance {
     typedef union {
-        struct __attribute__((__packed__))  {
+        struct __attribute__((__packed__)) {
             uint8_t dst_mac[6];
             uint8_t src_mac[6];
             uint8_t ad_header[2];
@@ -153,6 +153,7 @@ public:
     uint8_t* binary();
     constexpr size_t header_len() {return sizeof(Header_t);}
 
+    uint8_t* get_data();
     void set_payload(const VLAN_Payload load);
     VLAN_Payload get_payload() const;
 };
